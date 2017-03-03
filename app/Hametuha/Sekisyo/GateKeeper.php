@@ -38,16 +38,24 @@ class GateKeeper {
 				if ( 'plugins_page_sekisyo' === $page ) {
 					wp_enqueue_style( 'sekisyo-admin' );
 					wp_enqueue_script( 'sekisyo-helper' );
-					wp_localize_script( 'sekisyo-helper', 'Sekisyo', [
-					] );
+					// wp_localize_script( 'sekisyo-helper', 'Sekisyo', [] );
 				}
 			} );
 			// Add API
 			add_action( 'rest_api_init', [ $this, 'rest_api_init' ] );
 			// Add license cron
-
+			add_filter( 'cron_schedules', function ( $schedules ) {
+				$schedules['sekisyo_validate'] = [
+					'interval' => 60 * 60 * 2,
+					'display'  => __( 'Check plugins\' validity once in 2 hours.', 'sekisyo' ),
+				];
+				return $schedules;
+			} );
 			// Cron message
-
+			if ( ! wp_next_scheduled( 'sekisyo_validate' ) ) {
+				wp_schedule_event( current_time( 'timestamp', true ), 'sekisyo_validate', 'sekisyo_check_validity' );
+			}
+			add_action( 'sekisyo_check_validity', [ $this, 'check_validity' ] );
 		} );
 	}
 
@@ -55,10 +63,12 @@ class GateKeeper {
 	 * Register menu
 	 */
 	public function admin_menu() {
-		add_plugins_page( __( 'Plugin License', 'sekisyo' ), __( 'License', 'sekisyo' ), 'activate_plugins', 'sekisyo', [
-			$this,
-			'render_admin'
-		] );
+		add_plugins_page(
+			__( 'Plugin License', 'sekisyo' ),
+			__( 'License', 'sekisyo' ),
+			'activate_plugins', 'sekisyo',
+			[ $this, 'render_admin' ]
+		);
 	}
 
 	/**
@@ -175,6 +185,22 @@ class GateKeeper {
 				'html'    => $plugin->render(),
 				'message' => __( 'License key is unlinked.', 'sekisyo' ),
 			] );
+		}
+	}
+
+	/**
+	 * Check validity with cron job
+	 */
+	public function check_validity() {
+		foreach ( $this->plugins as $plugin ) {
+			/** @var Plugin $plugin */
+			if ( $plugin->valid ) {
+				// This is valid plugin, so we need check license health.
+				$plugin->update_license( $plugin->license, true );
+				if ( $plugin->failed > 12 ) {
+				    do_action( 'sekisyo_update_error', $plugin->guid, $plugin );
+				}
+			}
 		}
 	}
 

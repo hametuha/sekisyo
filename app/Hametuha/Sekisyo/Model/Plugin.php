@@ -12,6 +12,7 @@ namespace Hametuha\Sekisyo\Model;
  * @property string $author
  * @property string $name
  * @property bool $valid
+ * @property int  $failed
  * @property string|false $last_checked
  */
 class Plugin {
@@ -99,15 +100,25 @@ class Plugin {
 	 * Update license
 	 *
 	 * @param string $license
+     * @param bool   $keep_status
 	 * @return bool|\WP_Error
 	 */
-	public function update_license( $license ) {
+	public function update_license( $license, $keep_status = false ) {
 		$option = get_option( 'sekisyo_license', [] );
 		$validity = $this->validate( $license );
+		$failed = $this->failed;
+		if ( is_wp_error( $validity ) ) {
+		    $failed++;
+        } else {
+		    $failed = 0;
+        }
+		$prev_status = $this->valid;
+		$cur_status  = is_wp_error( $validity ) ? false : true;
 		$option[ $this->guid ] = [
 			'license' => $license,
-			'valid' => is_wp_error( $validity ) ? false : true,
+			'valid' => ( $keep_status && ! $cur_status )? $prev_status : $cur_status,
 			'last_checked' => current_time( 'mysql', true ),
+            'failed' => $failed,
 		];
 		update_option( 'sekisyo_license', $option );
 		return is_wp_error( $validity ) ? $validity : true;
@@ -169,6 +180,7 @@ class Plugin {
 				'license'      => '',
 				'valid'        => false,
 				'last_checked' => current_time( 'mysql', true ),
+				'failed' => 0,
 			];
 			update_option( 'sekisyo_license', $option );
 
@@ -214,16 +226,21 @@ class Plugin {
 				break;
 			case 'option':
 				$option = get_option( 'sekisyo_license', [] );
+
 				return isset( $option[ $this->guid ] ) ? $option[ $this->guid ] : [
-					'license' => '',
-					'valid' => false,
+					'license'      => '',
+					'valid'        => false,
 					'last_checked' => false,
+					'failed'       => 0,
 				];
 				break;
 			case 'license':
 			case 'valid':
 			case 'last_checked':
 				return $this->option[ $name ];
+				break;
+			case 'failed':
+				return isset( $this->option['failed'] ) ? (int) $this->option['failed'] : 0;
 				break;
 			default:
 				return null;
