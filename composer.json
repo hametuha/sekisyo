@@ -1,0 +1,21 @@
+{
+    "name": "hametuha/sekisyo",
+    "description": "Premium plugin library for WordPress",
+    "type": "library",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "Hametuha INC.",
+            "email": "info@hametuha.co.jp"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "Hametuha\\Sekisyo\\": "app/"
+        }
+    },
+    "require": {
+        "php": ">=5.4"
+    },
+    "minimum-stability": "stable"
+}
