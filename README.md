@@ -15,3 +15,6 @@ This libary is available on composer.
     "hametuha/sekisyo": "dev-master"
 }
 ```
+
+[Warifu](https://github.com/hametuha/warifu) is the user of this library.
+Check it's [code](https://github.com/hametuha/warifu/blob/master/sekisyo.php).

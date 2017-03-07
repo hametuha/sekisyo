@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Sekisyo\n"
 "POT-Creation-Date: 2017-03-04 00:37+0900\n"
-"PO-Revision-Date: 2017-03-04 00:39+0900\n"
+"PO-Revision-Date: 2017-03-08 01:42+0900\n"
 "Last-Translator: Takahashi Fumiki <takahashi.fumiki@hametuha.co.jp>\n"
 "Language-Team: Takahashi Fumiki <takahashi.fumiki@hametuha.co.jp>\n"
 "Language: ja\n"
@@ -38,7 +38,7 @@ msgstr "プラグインが見つかりませんでした。"
 
 #: app/Hametuha/Sekisyo/GateKeeper.php:156
 msgid "This license is valid."
-msgstr "このライセンスは無効です。"
+msgstr "このライセンスは有効です。"
 
 #: app/Hametuha/Sekisyo/GateKeeper.php:183
 msgid "License key is unlinked."

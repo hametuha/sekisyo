@@ -10,6 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "gulp build && gulp watch",
     "watch": "gulp watch",
+    "package": "gulp build",
     "gulp": "gulp"
   },
   "repository": {
