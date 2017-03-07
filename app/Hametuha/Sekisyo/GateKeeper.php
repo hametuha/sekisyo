@@ -31,7 +31,10 @@ class GateKeeper {
 			// Register menu
 			add_action( 'admin_menu', [ $this, 'admin_menu' ] );
 			// Add scripts
-			wp_register_script( 'sekisyo-helper', $asset_dir . '/js/sekisyo-helper.js', [ 'jquery', 'wp-api' ], $this->version, true );
+			wp_register_script( 'sekisyo-helper', $asset_dir . '/js/sekisyo-helper.js', [
+				'jquery',
+				'wp-api',
+			], $this->version, true );
 			wp_register_style( 'sekisyo-admin', $asset_dir . '/css/sekisyo-admin.css', [], $this->version );
 			// Enqueue assets
 			add_action( 'admin_enqueue_scripts', function ( $page ) {
@@ -49,6 +52,7 @@ class GateKeeper {
 					'interval' => 60 * 60 * 2,
 					'display'  => __( 'Check plugins\' validity once in 2 hours.', 'sekisyo' ),
 				];
+
 				return $schedules;
 			} );
 			// Cron message
@@ -162,7 +166,6 @@ class GateKeeper {
 	}
 
 
-
 	/**
 	 * Handle post request
 	 *
@@ -197,8 +200,23 @@ class GateKeeper {
 			if ( $plugin->valid ) {
 				// This is valid plugin, so we need check license health.
 				$plugin->update_license( $plugin->license, true );
-				if ( $plugin->failed > 12 ) {
-				    do_action( 'sekisyo_update_error', $plugin->guid, $plugin );
+				if ( ! $plugin->fail_limit ) {
+				    // If plugin has no fail limit, skip it.
+				    continue;
+				}
+				/**
+				 * sekisyo_update_error
+				 *
+				 * @package sekisyo
+				 * @since 1.0.0
+				 *
+				 * @param string $guid
+				 * @param int $failed
+				 * @param Plugin $plugin
+				 */
+				do_action( 'sekisyo_update_error', $plugin->guid, $plugin->failed, $plugin );
+				if ( $plugin->failed > $plugin->fail_limit ) {
+					$plugin->inactivate();
 				}
 			}
 		}
@@ -234,16 +252,17 @@ class GateKeeper {
 	 * @param string $label
 	 * @param string $description
 	 * @param string $validate_url
+	 * @param int    $fail_limit
 	 *
 	 * @return \WP_Error
 	 */
-	public static function register( $guid, $file, $label, $description, $validate_url ) {
+	public static function register( $guid, $file, $label, $description, $validate_url, $fail_limit = 0 ) {
 		$instance = self::get_instance();
 		try {
 			if ( isset( $instance->plugins[ $guid ] ) ) {
 				throw new \Exception( sprintf( __( '%s is already registered.', 'sekisyo' ), $guid ), 400 );
 			}
-			$plugin                     = new Plugin( $guid, $file, $label, $description, $validate_url );
+			$plugin                     = new Plugin( $guid, $file, $label, $description, $validate_url, $fail_limit );
 			$instance->plugins[ $guid ] = $plugin;
 		} catch ( \Exception $exception ) {
 			return new \WP_Error( $exception->getCode(), $exception->getMessage(), [
@@ -271,19 +290,20 @@ class GateKeeper {
 	}
 
 	/**
-     * Detect if this plugin is valid
-     *
+	 * Detect if this plugin is valid
+	 *
 	 * @param array $guids
 	 *
 	 * @return bool
 	 */
 	public static function is_valid( $guids = [] ) {
-	    $instance = self::get_instance();
-	    foreach ( $guids as $guid ) {
-	        if ( isset( $instance->plugins[ $guid ] ) && $instance->plugins[ $guid ]->valid ) {
-	            return true;
-            }
-        }
-        return false;
-    }
+		$instance = self::get_instance();
+		foreach ( $guids as $guid ) {
+			if ( isset( $instance->plugins[ $guid ] ) && $instance->plugins[ $guid ]->valid ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
 }

@@ -31,6 +31,8 @@ class Plugin {
 
 	public $name = '';
 
+	public $fail_limit = 0;
+
 	/**
 	 * Constructor
 	 *
@@ -39,13 +41,15 @@ class Plugin {
 	 * @param string $label
 	 * @param string $description
 	 * @param string $validate_url
+     * @param int    $fail_limit
 	 */
-	public function __construct( $guid, $file, $label, $description, $validate_url ) {
+	public function __construct( $guid, $file, $label, $description, $validate_url, $fail_limit = 0 ) {
 		$this->file = ltrim( str_replace( ABSPATH . 'wp-content/plugins', '', $file ), '/' );
 		$this->guid = $guid;
 		$this->description = $description;
 		$this->label = $label;
 		$this->validate_url = $validate_url;
+		$this->fail_limit = $fail_limit;
 	}
 
 	/**
@@ -100,28 +104,39 @@ class Plugin {
 	 * Update license
 	 *
 	 * @param string $license
-     * @param bool   $keep_status
+	 * @param bool $keep_status
+	 *
 	 * @return bool|\WP_Error
 	 */
 	public function update_license( $license, $keep_status = false ) {
-		$option = get_option( 'sekisyo_license', [] );
+		$option   = get_option( 'sekisyo_license', [] );
 		$validity = $this->validate( $license );
-		$failed = $this->failed;
+		$failed   = $this->failed;
 		if ( is_wp_error( $validity ) ) {
-		    $failed++;
-        } else {
-		    $failed = 0;
-        }
-		$prev_status = $this->valid;
-		$cur_status  = is_wp_error( $validity ) ? false : true;
+			$failed ++;
+		} else {
+			$failed = 0;
+		}
+		$prev_status           = $this->valid;
+		$cur_status            = is_wp_error( $validity ) ? false : true;
 		$option[ $this->guid ] = [
-			'license' => $license,
-			'valid' => ( $keep_status && ! $cur_status )? $prev_status : $cur_status,
+			'license'      => $license,
+			'valid'        => ( $keep_status && ! $cur_status ) ? $prev_status : $cur_status,
 			'last_checked' => current_time( 'mysql', true ),
-            'failed' => $failed,
+			'failed'       => $failed,
 		];
 		update_option( 'sekisyo_license', $option );
+
 		return is_wp_error( $validity ) ? $validity : true;
+	}
+
+	/**
+	 * Deactivate license
+	 */
+	public function inactivate() {
+		$option = get_option( 'sekisyo_license', [] );
+		$option[ $this->guid ]['valid'] = false;
+		update_option( 'sekisyo_license', $option );
 	}
 
 	/**
