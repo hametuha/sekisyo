@@ -56,7 +56,7 @@ class GateKeeper {
 				return $schedules;
 			} );
 			// Cron message
-			if ( ! wp_next_scheduled( 'sekisyo_validate' ) ) {
+			if ( ! wp_next_scheduled( 'sekisyo_check_validity' ) ) {
 				wp_schedule_event( current_time( 'timestamp', true ), 'sekisyo_validate', 'sekisyo_check_validity' );
 			}
 			add_action( 'sekisyo_check_validity', [ $this, 'check_validity' ] );
